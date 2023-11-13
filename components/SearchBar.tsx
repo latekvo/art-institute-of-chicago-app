@@ -5,6 +5,7 @@ import GlobalStyles from '../constants/GlobalStyles';
 
 const SearchBar = () => {
     // currently the image will be the icon of our app, in future we might change it to a link leading to account settings
+    // TODO: clicking on aic logo results in the following prompt: 'Are you sure you want to visit Art In....', which in turn opens a WebView to their website
     return (
         <View style={styles.headerRoot}>
             <View style={[styles.searchBar, GlobalStyles.lightBorders]}>
