@@ -6,6 +6,8 @@ enum CssColors {
     minorElement = '#555',
     primaryBackground = '#FFF',
     minorBackground = '#CCC',
+    primaryAccent = '#9D1B31', // probed from AIC's logo
+    minorAccent = '#AE4355' // probed from a blurred AIC's logo
 }
 
 export default CssColors;

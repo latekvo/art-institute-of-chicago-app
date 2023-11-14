@@ -19,7 +19,7 @@ const ViewSelector = () => {
 
     // TODO: animate transitions (preferably use 'reanimate')
     let modeToColor = (modeIndex: number) => {
-        return currentMode == modeIndex ? Colors.primaryElement : Colors.minorElement;
+        return currentMode == modeIndex ? Colors.primaryAccent : Colors.minorElement;
     }
     let modeToSize = (modeIndex: number) => {
         return currentMode == modeIndex ? 32 : 26;
@@ -27,14 +27,14 @@ const ViewSelector = () => {
 
     return (
         <View style={styles.viewRoot}>
-            <Pressable onPress={() => {setCurrentMode(ViewModes.favourites)}} style={[styles.modeSelector, GlobalStyles.lightBorders]}>
-                <MaterialIcons name="star" size={modeToSize(ViewModes.favourites)} color={modeToColor(ViewModes.favourites)}/>
+            <Pressable onPress={() => {setCurrentMode(ViewModes.categories)}} style={[styles.modeSelector, GlobalStyles.lightBorders]}>
+                <MaterialIcons name="dashboard" size={modeToSize(ViewModes.categories)} color={modeToColor(ViewModes.categories)}/>
             </Pressable>
             <Pressable onPress={() => {setCurrentMode(ViewModes.explore)}} style={[styles.modeSelector, GlobalStyles.lightBorders]}>
                 <MaterialIcons name="explore" size={modeToSize(ViewModes.explore)} color={modeToColor(ViewModes.explore)}/>
             </Pressable>
-            <Pressable onPress={() => {setCurrentMode(ViewModes.settings)}} style={[styles.modeSelector, GlobalStyles.lightBorders]}>
-                <MaterialIcons name="settings" size={modeToSize(ViewModes.settings)} color={modeToColor(ViewModes.settings)}/>
+            <Pressable onPress={() => {setCurrentMode(ViewModes.favourites)}} style={[styles.modeSelector, GlobalStyles.lightBorders]}>
+                <MaterialIcons name="star" size={modeToSize(ViewModes.favourites)} color={modeToColor(ViewModes.favourites)}/>
             </Pressable>
         </View>
     );

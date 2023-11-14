@@ -6,6 +6,9 @@ const GlobalStyles = StyleSheet.create({
         borderStyle: 'solid',
         borderColor: '#ccc',
         borderWidth: 1,
+    },
+    headerFont: {
+        fontFamily: 'AbrilFatface',
     }
 });
 
