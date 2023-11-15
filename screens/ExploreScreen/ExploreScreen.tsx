@@ -39,7 +39,8 @@ export default ExploreScreen;
 
 const styles = StyleSheet.create({
 	infiniteTileContainer: {
-
+		alignItems: 'center',
+		justifyContent: 'center',
 	}
 
 });

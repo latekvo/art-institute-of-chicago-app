@@ -18,6 +18,8 @@ const ScreenManager = () => {
 
 	// in an unexpected case when a screen for the selected mode is not yet implemented, reset the mode and redirect back to the explore screen
 	if (!screenTranslationTable.has(currentMode)) {
+		// any changes to the currentMode context have to be asynchronous (made via a Promise),
+		// but that doesn't matter, as in the very worst case scenario we will refresh the explore screen 1 additional time per error
 		new Promise(() => setCurrentMode(ViewModes.explore));
 		return screenTranslationTable.get(ViewModes.explore)
 	}
