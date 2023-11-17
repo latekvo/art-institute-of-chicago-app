@@ -1,10 +1,11 @@
-import {ScrollView, View, Text, StyleSheet, Dimensions, Pressable, ImageBackground} from "react-native";
+import {ScrollView, View, Text, StyleSheet, Dimensions, Pressable, ImageBackground, Image} from "react-native";
 import searchScreen from "../SearchScreen/SearchScreen";
 import React, {useState} from "react";
 import colors from "../../constants/Colors";
 import GlobalStyles from "../../constants/GlobalStyles";
 import Colors from "../../constants/Colors";
 import * as url from "url";
+//import FastImage from "react-native-fast-image";
 
 class Category {
 	displayName: string = 'Blank';
@@ -68,6 +69,7 @@ class Category {
 		return (
 			// do not remove the key prop, it is unused but required by react-native
 			<ImageBackground style={styles.backgroundContainer} source={{uri: thumbnailUrl}} key={index}>
+				{/*<FastImage source={{uri: thumbnailUrl}} resizeMode={FastImage.resizeMode.cover}/>*/}
 				<Pressable style={[styles.categoryContainer, {backgroundColor: '#0006'}]}>
 					{
 						coreElement
@@ -90,7 +92,7 @@ const categories = Array<Category>(
 	new Category('Animals', 'animals'),
 	new Category('Modern', 'modern'),
 	new Category('Sculptures', {
-		artwork_type_title: 'Sculpture'
+		artwork_type_title: 'sculpture'
 	}),
 	new Category('Baroque', 'baroque'),
 	new Category('Pop art', 'pop\\ art'),

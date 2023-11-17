@@ -9,6 +9,8 @@ import SearchScreen from "../screens/SearchScreen/SearchScreen";
 const ScreenManager = () => {
 	const { currentMode, setCurrentMode } = useCurrentModeContext();
 
+	console.log('ScreenManager executed');
+
 	let screenTranslationTable = new Map([
 		[ViewModes.explore, <ExploreScreen/>],
 		[ViewModes.search, <SearchScreen/>],
