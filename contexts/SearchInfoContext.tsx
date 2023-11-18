@@ -1,13 +1,15 @@
 import React, {useState, createContext, useContext} from "react";
 import ViewModes from "../constants/ViewModes";
 import {useCurrentModeContext} from "./CurrentModeContext";
+import {StyleProp, ViewStyle} from "react-native";
+import {InfiniteScrollProps} from "../components/InfiniteScrollQuery";
 
 // todo: replace contexts with Redux store, for now we will have to stack contexts if we need more of them.
 
 type SearchInfoProps = {
-	searchTerm: string,
+	searchTerm?: string,
 	previousView: ViewModes, // upon exiting, we should be reverted to the previous view along with all the details
-	previousViewProps: any,
+	previousViewProps?: any,
 };
 
 interface SearchInfoContextProps {

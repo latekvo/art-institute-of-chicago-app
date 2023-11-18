@@ -19,9 +19,8 @@ const SearchBar = () => {
             });
             setCurrentMode(ViewModes.search);
         } else {
-            console.log('setting search query:', text);
+            // console.log('setting search query:', text);
             setNewQuery(text);
-            console.log('confirmation:', searchInfo.searchTerm);
         }
     }
 

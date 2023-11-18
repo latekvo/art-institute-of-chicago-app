@@ -2,6 +2,7 @@ import React from "react";
 import {Dimensions, StyleSheet, Text, View} from "react-native";
 import Colors from "../../../constants/Colors";
 import GlobalStyles from "../../../constants/GlobalStyles";
+import InfiniteScrollQuery, {PageView} from "../../../components/InfiniteScrollQuery";
 
 const PopularArt = () => {
     const requiredFields = [
@@ -11,13 +12,11 @@ const PopularArt = () => {
         'dimensions_detail',
     ].toString();
 
-    // get ~20 first results from general search, only get image and title, use thin border separators
-
     return (
         <View style={styles.popularRoot}>
             <Text style={[styles.popularHeader, GlobalStyles.headerFont]}>Most Popular</Text>
             <View style={styles.popularPopout}>
-
+                <PageView pageNumber={1} searchQuery={''} enablePopoutMode={false}/>
             </View>
         </View>
     );
@@ -35,7 +34,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 2,
         borderColor: Colors.primaryAccent,
-        padding: 10,
+        // padding: 10,
     },
     popularHeader: {
         textAlign: 'left',

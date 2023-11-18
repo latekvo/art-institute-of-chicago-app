@@ -1,10 +1,23 @@
-import {ScrollView, View, Text, StyleSheet, Dimensions, Pressable, ImageBackground, Image} from "react-native";
+import {
+	ScrollView,
+	View,
+	Text,
+	StyleSheet,
+	Dimensions,
+	Pressable,
+	ImageBackground,
+	Image,
+	StyleProp, ViewStyle
+} from "react-native";
 import searchScreen from "../SearchScreen/SearchScreen";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import colors from "../../constants/Colors";
 import GlobalStyles from "../../constants/GlobalStyles";
 import Colors from "../../constants/Colors";
 import * as url from "url";
+import {useSearchInfoContext} from "../../contexts/SearchInfoContext";
+import {useCurrentModeContext} from "../../contexts/CurrentModeContext";
+import ViewModes from "../../constants/ViewModes";
 //import FastImage from "react-native-fast-image";
 
 class Category {
@@ -43,11 +56,13 @@ class Category {
 
 	toElement(index: number) {
 		const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
+		const {searchInfo, setSearchInfo, setNewQuery} = useSearchInfoContext();
+		const {currentMode, setCurrentMode} = useCurrentModeContext();
+
 
 		// depending on if the promise is fulfilled, we will load the panel with or without a bg image
 		this.fetchThumbnail().then((res) => {
-			const imageId = res.data[0]['image_id'];
-			setThumbnailUrl(`https://www.artic.edu/iiif/2/${imageId}/full/400,/0/default.jpg`)
+			setThumbnailUrl(`https://www.artic.edu/iiif/2/${res.data[0]['image_id']}/full/400,/0/default.jpg`)
 		});
 
 		const coreElement = (
@@ -55,6 +70,17 @@ class Category {
 				{this.displayName}
 			</Text>
 		);
+
+		const displayCategory = () => {
+			console.log('Category selected:', this.searchTerm);
+			if (this.searchTerm) {
+				setSearchInfo({
+					searchTerm: this.searchTerm,
+					previousView: currentMode,
+				});
+				setCurrentMode(ViewModes.search);
+			}
+		};
 
 		if (thumbnailUrl == '') {
 			return (
@@ -70,7 +96,7 @@ class Category {
 			// do not remove the key prop, it is unused but required by react-native
 			<ImageBackground style={[styles.backgroundContainer]} source={{uri: thumbnailUrl}} key={index}>
 				{/*<FastImage source={{uri: thumbnailUrl}} resizeMode={FastImage.resizeMode.cover}/>*/}
-				<Pressable style={[styles.categoryContainer, {backgroundColor: '#0006'}]}>
+				<Pressable onPress={displayCategory} style={[styles.categoryContainer, {backgroundColor: '#0006'}]}>
 					{
 						coreElement
 					}
@@ -78,30 +104,15 @@ class Category {
 			</ImageBackground>
 		);
 	}
-
-	toSearchQuery() {
-		`https://api.artic.edu/api/v1/artworks/search?query[term][is_public_domain]=true&limit=2&fields=id,title,image_id`;
-	}
 }
 
 const categories = Array<Category>(
-	new Category('Most Popular', {
-		// already sorted by popularity
-		has_not_been_viewed_much: false
-	}),
+
 	new Category('Animals', 'animals'),
-	new Category('Modern', 'modern'),
-	new Category('Sculptures', {
-		artwork_type_title: 'sculpture'
-	}),
+	new Category('Cats', 'cat'),
+	new Category('Sculptures', 'sculpture'),
 	new Category('Baroque', 'baroque'),
-	new Category('Pop art', 'pop\\ art'),
 	new Category('Water', 'water'),
-	new Category('Least popular', {
-		// todo: reverse the default sorting, this will return least popular art first
-		is_boosted: false,
-		has_not_been_viewed_much: true,
-	}),
 	new Category('Impressionism', 'impressionism'),
 );
 
