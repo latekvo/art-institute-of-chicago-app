@@ -9,6 +9,12 @@ const GlobalStyles = StyleSheet.create({
     },
     headerFont: {
         fontFamily: 'AbrilFatface',
+    },
+    popoutBorders: {
+        borderStyle: 'solid',
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: Colors.primaryAccent,
     }
 });
 

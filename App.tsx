@@ -6,6 +6,7 @@ import Colors from "./constants/Colors";
 import {CurrentModeProvider} from "./contexts/CurrentModeContext";
 import { useFonts } from 'expo-font';
 import ScreenManager from "./components/ScreenManager";
+import {SearchInfoProvider} from "./contexts/SearchInfoContext";
 
 export default function App() {
     // import custom fonts
@@ -29,8 +30,10 @@ export default function App() {
     return (
         <SafeAreaView style={styles.viewRoot}>
             <CurrentModeProvider>
-                <SearchBar/>
-                <ScreenManager/>
+                <SearchInfoProvider>
+                    <SearchBar/>
+                    <ScreenManager/>
+                </SearchInfoProvider>
                 <ViewSelector/>
             </CurrentModeProvider>
         </SafeAreaView>

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {memo, useEffect, useState} from "react";
 import {StyleSheet, View, Text, ActivityIndicator, Dimensions, Image} from "react-native";
 import GlobalStyles from "../../../constants/GlobalStyles";
 import Colors from "../../../constants/Colors";
@@ -7,8 +7,10 @@ import Colors from "../../../constants/Colors";
 //       we need to resolve this ASAP, otherwise the loading times will be unbearable
 //import FastImage from 'react-native-fast-image'; // expo-fast-image and expo-react-native-fast-image and react-native-fast-image-expo don't work either, none of the online fixes had worked
 
+// i have this here just as an experiment, will measure the results and then remove/move this soon
+const CachedImage = memo(Image);
 
-const FeaturedArt = () => {
+const FeaturedArt = memo(() => {
 	const requiredFields = [
 		'id',
 		'title',
@@ -63,24 +65,26 @@ const FeaturedArt = () => {
 
 	// display spinner while the image is loading
 	if (!isArtLoaded) {
-		return <ActivityIndicator size='large' color={Colors.primaryAccent}/>;
+		return <ActivityIndicator size='large' color={Colors.primaryAccent} style={styles.featuredImage}/>;
 	}
 
 	return (
 		<View style={styles.featuredRoot}>
 			<Text style={[styles.featuredHeader, GlobalStyles.headerFont]}>Art of the day</Text>
-			<View style={styles.featuredPopout}>
-				<Image source={{uri: featuredDetails.imageFileUrl}} style={[styles.featuredImage, {height: featuredDetails.height}]}/>
-				<Text style={styles.featuredTitle}>
-					{featuredDetails.title}
-				</Text>
-				<Text style={styles.featuredDescription}>
-					{featuredDetails.description}
-				</Text>
+			<View style={GlobalStyles.popoutBorders}>
+				<CachedImage source={{uri: featuredDetails.imageFileUrl}} style={[styles.featuredImage, {height: featuredDetails.height}]}/>
+				<View style={styles.featuredTextWrapper}>
+					<Text style={styles.featuredTitle}>
+						{featuredDetails.title}
+					</Text>
+					<Text style={styles.featuredDescription}>
+						{featuredDetails.description}
+					</Text>
+				</View>
 			</View>
 		</View>
 	);
-}
+});
 
 const styles = StyleSheet.create({
 	featuredRoot: {
@@ -89,13 +93,6 @@ const styles = StyleSheet.create({
 		height: 'auto',
 		padding: 10,
 		//marginTop: 20,
-	},
-	featuredPopout: {
-		borderStyle: 'solid',
-		borderRadius: 8,
-		borderWidth: 2,
-		borderColor: Colors.primaryAccent,
-		padding: 10,
 	},
 	featuredHeader: {
 		textAlign: 'left',
@@ -107,7 +104,11 @@ const styles = StyleSheet.create({
 		// default values, should be immediately replaced with the dynamically set ones
 		flex: 1,
 		height: 250,
-		borderRadius: 8,
+		borderRadius: 6,
+	},
+	featuredTextWrapper: {
+		padding: 8,
+		paddingBottom: 0
 	},
 	featuredTitle: {
 		fontSize: 18,

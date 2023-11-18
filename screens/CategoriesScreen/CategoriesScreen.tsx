@@ -58,7 +58,7 @@ class Category {
 
 		if (thumbnailUrl == '') {
 			return (
-				<Pressable style={[styles.backgroundContainer, styles.categoryContainer]} key={index}>
+				<Pressable style={[styles.backgroundContainer, styles.categoryContainer, GlobalStyles.popoutBorders]} key={index}>
 					{
 						coreElement
 					}
@@ -68,7 +68,7 @@ class Category {
 
 		return (
 			// do not remove the key prop, it is unused but required by react-native
-			<ImageBackground style={styles.backgroundContainer} source={{uri: thumbnailUrl}} key={index}>
+			<ImageBackground style={[styles.backgroundContainer]} source={{uri: thumbnailUrl}} key={index}>
 				{/*<FastImage source={{uri: thumbnailUrl}} resizeMode={FastImage.resizeMode.cover}/>*/}
 				<Pressable style={[styles.categoryContainer, {backgroundColor: '#0006'}]}>
 					{
