@@ -3,10 +3,9 @@ import SearchBar from "./components/SearchBar";
 import ViewSelector from "./components/ViewSelector";
 import React from "react";
 import Colors from "./constants/Colors";
-import {CurrentModeProvider} from "./contexts/CurrentModeContext";
 import { useFonts } from 'expo-font';
 import ScreenManager from "./components/ScreenManager";
-import {SearchInfoProvider} from "./contexts/SearchInfoContext";
+import {GlobalContextProvider} from "./contexts/GlobalContextProvider";
 
 export default function App() {
     // import custom fonts
@@ -25,21 +24,16 @@ export default function App() {
         return <ActivityIndicator size='large' color={Colors.primaryAccent}/>;
     }
 
-    // We're wrapping the entire app with a context provider,
-    // this will help us manage global states, and will make transitioning into Redux relatively simple
     return (
         <SafeAreaView style={styles.viewRoot}>
-            <CurrentModeProvider>
-                <SearchInfoProvider>
-                    <SearchBar/>
-                    <ScreenManager/>
-                </SearchInfoProvider>
+            <GlobalContextProvider>
+                <SearchBar/>
+                <ScreenManager/>
                 <ViewSelector/>
-            </CurrentModeProvider>
+            </GlobalContextProvider>
         </SafeAreaView>
     );
-    // for client-side debugging interface add: <StatusBar style="auto"/>, into the view root
-}
+};
 
 const styles = StyleSheet.create({
     viewRoot: {

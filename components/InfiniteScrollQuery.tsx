@@ -1,10 +1,8 @@
-import React, {createRef, useEffect, useRef, useState} from "react";
-import {useAnimatedStyle, withTiming} from "react-native-reanimated";
+import React, {createRef, memo, useEffect, useRef, useState} from "react";
 import {
-	ActivityIndicator,
 	Dimensions,
 	FlatList,
-	Image, NativeScrollEvent,
+	Image, NativeScrollEvent, Pressable,
 	ScrollView,
 	StyleProp,
 	StyleSheet,
@@ -12,28 +10,43 @@ import {
 	View, ViewStyle
 } from "react-native";
 import GlobalStyles from "../constants/GlobalStyles";
-import Colors from "../constants/Colors";
-import {useSearchInfoContext} from "../contexts/SearchInfoContext";
+import {useDisplayedArtIdContext} from "../contexts/DisplayedArtIdContext";
+import {useCurrentModeContext} from "../contexts/CurrentModeContext";
+import ViewModes from "../constants/ViewModes";
 
 type ArtPositionProps = {id: number, title: string, imageId: string, thumbnail: { width: number | null | undefined, height: number | null | undefined }};
 
-const ArtPosition = (data: ArtPositionProps) => {
+const ArtPosition = memo((data: ArtPositionProps) => {
+	// set appropriate contexts, data, view
+	const { artId, setArtId } = useDisplayedArtIdContext();
+	const { currentMode, setCurrentMode } = useCurrentModeContext();
+
 	const imageUrl = `https://www.artic.edu/iiif/2/${data.imageId}/full/843,/0/default.jpg`;
 
 	const hwRatio = (data.thumbnail.height && data.thumbnail.width) ? (data.thumbnail.height / data.thumbnail.width) : null;
 	let finalHeight = hwRatio != null ? 200 * hwRatio : null;
 	const isImageWide = !!(hwRatio && hwRatio < 0.7);
 	// FIXME: for now the max width is an approximation, this should be dynamically checked
-	if (isImageWide)
+	if (hwRatio && isImageWide)
 		finalHeight = 415 * hwRatio;
 
+	const displayArtInfo = () => {
+		setArtId(data.id);
+		setCurrentMode(ViewModes.details);
+	}
+
+	// don't render pictureless positions
+	if (!data.imageId) {
+		return <View/>
+	}
+
 	return (
-		<View style={[styles.artPosition, isImageWide ? styles.artPositionWide : {}, GlobalStyles.lightBorders]}>
-			<Image source={{uri: imageUrl}} style={[styles.artPositionImage, isImageWide ? styles.artPositionImageWide : {}, {height: finalHeight}]}/>
+		<Pressable onPress={() => displayArtInfo()} style={[styles.artPosition, isImageWide ? styles.artPositionWide : {}, GlobalStyles.lightBorders]}>
+			<Image source={{uri: imageUrl}} style={[styles.artPositionImage, isImageWide ? styles.artPositionImageWide : {}, hwRatio != null ? {height: finalHeight} : {height: '100%'}]}/>
 			<Text style={styles.artPositionTitle}>{data.title}</Text>
-		</View>
+		</Pressable>
 	)
-};
+});
 
 const fetchDataByPage = (page: number, searchTerm: string) => {
 	// THIS NUMBER HAS TO BE KEPT AT 10 OR LOWER, above 10 render commands are VERY likely to be dropped, causing the rendering to run at 8fps, and JS having to resend everything
@@ -45,6 +58,8 @@ const fetchDataByPage = (page: number, searchTerm: string) => {
 
 const getDataByPage = (page: number, searchTerm: string): ArtPositionProps[] => {
 	const [pageData, setPageData] = useState([]);
+
+	// console.log('Getting new data for page:', page, 'and term:', searchTerm);
 
 	useEffect(() => {
 		fetchDataByPage(page, searchTerm).then((res) => {
@@ -59,7 +74,7 @@ const getDataByPage = (page: number, searchTerm: string): ArtPositionProps[] => 
 				} as ArtPositionProps
 			)));
 		});
-	}, [searchTerm]);
+	}, [page, searchTerm]);
 
 	return pageData;
 };
@@ -70,9 +85,11 @@ type PageViewProps = {
 	onEndReached?: () => void;
 	enablePopoutMode?: boolean
 };
-const PageView = ({searchQuery, pageNumber, onEndReached, enablePopoutMode = true}: PageViewProps) => {
+const PageView = memo(({searchQuery, pageNumber, onEndReached, enablePopoutMode = true}: PageViewProps) => {
 	if (!onEndReached)
 		onEndReached = () => null;
+
+	//console.log('Updated page to:', pageNumber);
 
 	// an entire page worth of results, we will use 2 of these to create infinite scroll
 	return (
@@ -88,17 +105,19 @@ const PageView = ({searchQuery, pageNumber, onEndReached, enablePopoutMode = tru
 			)}
 		/>
 	)
-};
+});
 
 type InfiniteScrollProps = {
 	searchTerm?: string,
 	startingPage?: number,
 	style?: StyleProp<ViewStyle>,
 	overrideStyle?: StyleProp<ViewStyle>,
-	displayHeader?: string | null,
+	firstPageOverride?: React.JSX.Element,
 }
-const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, overrideStyle = null, displayHeader = null}: InfiniteScrollProps) => {
-	const [pageIndex, setPageIndex] = useState(1);
+const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, overrideStyle = null, firstPageOverride}: InfiniteScrollProps) => {
+	const [pageIndex, setPageIndex] = useState(startingPage);
+	const [progressionLock, setProgressionLock] = useState(false);
+
 	let scrollViewRef = createRef<ScrollView>();
 	// we will infinitely scroll through ?q={searchTerm}, in order to do that i will place 2 memoized page-components
 	// i don't think we need anything else inside this element besides the infinite scroll + searchTerm passing
@@ -107,7 +126,9 @@ const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, ove
 		const triggerThreshold = 10; // value in pixels, booleans trigger just before reaching the bottom/top
 		const closeToTop = contentOffset.y < triggerThreshold;
 		const closeToBottom = layoutMeasurement.height + contentOffset.y > contentSize.height - triggerThreshold;
-		console.log('close to top:', closeToTop, 'close to bottom:', closeToBottom);
+
+		// if (closeToTop || closeToBottom)
+			// console.log('close to top:', closeToTop, 'close to bottom:', closeToBottom);
 
 		// act on triggers, I already tested whether they work or not and they do, I am writing this because i am sure this part will be very buggy
 		// in case of jumpiness, I will have to place mutex locks on this code, but it probably won't be necessary otherwise
@@ -117,22 +138,26 @@ const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, ove
 			// scroll back just enough to not trigger this switch
 			scrollViewRef.current?.scrollTo({x: 0, y: triggerThreshold + 10, animated: false})
 			setPageIndex(pageIndex - 1);
-			console.log(pageIndex);
 		}
 		if (closeToBottom) {
 			if (pageIndex == 1000)
 				return
-			scrollViewRef.current?.scrollTo({x: 0, y: contentOffset.y / 2, animated: false})
+			// this long calculation converts to: middle of page - half of the device height
+			// for better results, we need to get height of the page we are moving up, replace (contentOffset.y / 2) with that value
+			scrollViewRef.current?.scrollTo({x: 0, y: contentOffset.y / 2 - layoutMeasurement.height / 2 + triggerThreshold, animated: false})
 			setPageIndex(pageIndex + 1);
-			console.log(pageIndex);
 		}
 	};
 
 	return (
 		<ScrollView ref={scrollViewRef} onScroll={({nativeEvent}) => {actOnScroll(nativeEvent)}} style={overrideStyle ?? [styles.searchScreenRoot, style]}>
 			{
-				pageIndex == startingPage &&
+				pageIndex == startingPage && searchTerm != '' &&
 				<Text style={styles.resultsHeader}>Displaying results for: {searchTerm}</Text>
+			}
+			{
+				pageIndex == startingPage &&
+				firstPageOverride
 			}
 			<PageView pageNumber={pageIndex} searchQuery={searchTerm}/>
 			<PageView pageNumber={pageIndex + 1} searchQuery={searchTerm}/>

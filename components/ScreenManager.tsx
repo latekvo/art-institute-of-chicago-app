@@ -5,17 +5,17 @@ import ExploreScreen from "../screens/ExploreScreen/ExploreScreen";
 import FavouritesScreen from "../screens/FavouritesScreen/FavouritesScreen";
 import CategoriesScreen from "../screens/CategoriesScreen/CategoriesScreen";
 import SearchScreen from "../screens/SearchScreen/SearchScreen";
+import ArtInfoScreen from "../screens/ArtInfoScreen/ArtInfoScreen";
 
 const ScreenManager = () => {
 	const { currentMode, setCurrentMode } = useCurrentModeContext();
 
-	console.log('ScreenManager executed');
-
-	let screenTranslationTable = new Map([
+	const screenTranslationTable = new Map([
 		[ViewModes.explore, <ExploreScreen/>],
 		[ViewModes.search, <SearchScreen/>],
 		[ViewModes.categories, <CategoriesScreen/>],
 		[ViewModes.favourites, <FavouritesScreen/>],
+		[ViewModes.details, <ArtInfoScreen/>]
 	]);
 
 	// in an unexpected case when a screen for the selected mode is not yet implemented, reset the mode and redirect back to the explore screen
