@@ -1,4 +1,4 @@
-import {View} from "react-native";
+import {View, Text} from "react-native";
 import {useEffect, useState} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import InfiniteScrollQuery from "../../components/InfiniteScrollQuery";
@@ -35,6 +35,14 @@ const FavouritesScreen = () => {
 	if (!savedList) {
 		return (
 			<View/>
+		);
+	}
+
+	if (savedList.length == 0) {
+		return (
+			<View style={{flex: 1}}>
+				<Text style={{fontSize: 48, flex: 1, alignSelf: 'center', marginTop: 48}}>No art saved yet</Text>
+			</View>
 		);
 	}
 

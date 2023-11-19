@@ -14,8 +14,9 @@ import {useDisplayedArtIdContext} from "../contexts/DisplayedArtIdContext";
 import {useCurrentModeContext} from "../contexts/CurrentModeContext";
 import ViewModes from "../constants/ViewModes";
 import SaveButton from "./SaveButton";
+import { Keyboard } from 'react-native';
 
-type ArtPositionProps = {id: number, title: string, imageId: string, thumbnail: { width: number | null | undefined, height: number | null | undefined }};
+type ArtPositionProps = {id: number, title: string, imageId: string, thumbnail: { width: number | null | undefined, height: number | null | undefined }, artistTitle?: string | null};
 
 const ArtPosition = memo((data: ArtPositionProps) => {
 	// set appropriate contexts, data, view
@@ -53,7 +54,7 @@ const ArtPosition = memo((data: ArtPositionProps) => {
 const fetchDataByPage = (page: number, searchTerm: string) => {
 	// THIS NUMBER HAS TO BE KEPT AT 10 OR LOWER, above 10 render commands are VERY likely to be dropped, causing the rendering to run at 8fps, and JS having to resend everything
 	const pageSize = 10;
-	const requestUrl = `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&page=${page}&limit=${pageSize}&query[term][is_public_domain]=true&fields=id,image_id,title,thumbnail`;
+	const requestUrl = `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&page=${page}&limit=${pageSize}&query[term][is_public_domain]=true&fields=id,image_id,title,thumbnail,artist_title`;
 	//console.log('used url:', requestUrl);
 	return fetch(requestUrl).then((res) => res.json());
 };
@@ -73,6 +74,7 @@ const getDataByPage = (page: number, searchTerm: string): ArtPositionProps[] => 
 						height: item['thumbnail'] ? item['thumbnail']['height'] : null,
 						width: item['thumbnail'] ? item['thumbnail']['width'] : null,
 					},
+					artistTitle: item['artist_title'],
 				} as ArtPositionProps
 			)));
 		});
@@ -85,7 +87,7 @@ const fetchDataByIds = (pageIndex: number, idList: number[]) => {
 	const startingIdx = pageIndex * 10 - 10; // to slice 0-9 starting index has to be 0
 	const endingIdx = pageIndex * 10; // to slice 0-9 endingIdx has to be set to 10
 	const queryData = idList.slice(startingIdx, endingIdx).toString();
-	const queryUrl = `https://api.artic.edu/api/v1/artworks?ids=${queryData}&fields=id,title,image_id,thumbnail`;
+	const queryUrl = `https://api.artic.edu/api/v1/artworks?ids=${queryData}&fields=id,title,image_id,thumbnail,artist_title`;
 	return fetch(queryUrl).then(res => res.json());
 };
 
@@ -103,6 +105,7 @@ const getDataByIdList = (page: number, dataList: number[]) => {
 							height: item['thumbnail'] ? item['thumbnail']['height'] : null,
 							width: item['thumbnail'] ? item['thumbnail']['width'] : null,
 						},
+						artistTitle: item['artist_title'],
 					} as ArtPositionProps
 				))
 			);
@@ -164,6 +167,7 @@ const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, ove
 		const triggerThreshold = 10; // value in pixels, booleans trigger just before reaching the bottom/top
 		const closeToTop = contentOffset.y < triggerThreshold;
 		const closeToBottom = layoutMeasurement.height + contentOffset.y > contentSize.height - triggerThreshold;
+		Keyboard.dismiss(); // hide the keyboard as soon as we start scrolling
 
 		// if (closeToTop || closeToBottom)
 			// console.log('close to top:', closeToTop, 'close to bottom:', closeToBottom);
@@ -180,7 +184,7 @@ const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, ove
 		if (closeToBottom) {
 			if (pageIndex == 1000)
 				return;
-			if (pageLimit && pageIndex == pageLimit)
+			if (pageLimit && pageIndex + 1 >= pageLimit)
 				return;
 			// this long calculation converts to: middle of page - half of the device height
 			// for better results, we need to get height of the page we are moving up, replace (contentOffset.y / 2) with that value

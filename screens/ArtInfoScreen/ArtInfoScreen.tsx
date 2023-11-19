@@ -7,6 +7,8 @@ import Colors from "../../constants/Colors";
 import GlobalStyles from "../../constants/GlobalStyles";
 import ImageViewer from 'react-native-image-zoom-viewer';
 import SaveButton from "../../components/SaveButton";
+import {MaterialIcons} from "@expo/vector-icons";
+import InfiniteScrollQuery from "../../components/InfiniteScrollQuery";
 
 // todo: this can be done semi-automatically, i can either bind these value names to the request's value names, or just give them the same names, then iterate over the .keys(),
 //       only nested objects like thumbnail object may be more difficult
@@ -24,7 +26,15 @@ type ArtPositionProps = {
 	date: number | null,
 	artworkType: string | null, // this property refers to the medium: canvas, sculpture, etc.
 	dimensions: string | null,
+	artistId: number | null,
+};
 
+type AuthorPositionProps = {
+	id: number,
+	authorTitle: string | null,
+	description: string | null,
+	dateOfBirth: string | null,
+	dateOfDeath: number | null,
 };
 
 const removeTagsFromString = (text: string) => {
@@ -33,6 +43,81 @@ const removeTagsFromString = (text: string) => {
 	// this function removes any html tags from the text - duplicated from FeaturedArt.tsx file
 	const regex = /(<([^>]+)>)/gi;
 	return text.replace(regex, "");
+}
+
+const getAuthorDataById = (authorId: number) => {
+	const [artistData, setArtistData] = useState({} as AuthorPositionProps);
+	const requestUrl =  `https://api.artic.edu/api/v1/agents/${authorId}`;
+
+	useEffect(() => {
+		fetch(requestUrl).then((res) => res.json()).then((res) => {
+			let item = res.data;
+			setArtistData({
+					id: item['id'],
+					authorTitle: item['title'],
+					description: removeTagsFromString(item['description']),
+					dateOfBirth: item['birth_date'],
+					dateOfDeath: item['death_date'],
+				} as AuthorPositionProps
+			);
+		});
+	}, [authorId]);
+
+	//console.log(artData);
+	return artistData;
+};
+
+const ArtistInfoComponent = ({authorId}: {authorId: number}) => {
+	const requestUrl =  `https://api.artic.edu/api/v1/agents/${authorId}`;
+	const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+	const artistData: AuthorPositionProps = getAuthorDataById(authorId);
+
+	useEffect(() => {
+		if (artistData == ({} as AuthorPositionProps))
+			setIsDataLoaded(false);
+		else
+			setIsDataLoaded(true);
+	}, [artistData]);
+
+	// todo: search related artworks by author_title instead of ?q=author_title
+
+	return (
+		<ScrollView style={[styles.artRoot, {padding: 6, alignContent: 'center'}]}>
+			<Text style={[styles.headerTitle, {textAlign: 'center'}]}>{artistData.authorTitle}</Text>
+			<View>
+				{
+					artistData.description ?
+						<Text style={{fontSize: 16, textAlign: 'justify', borderRadius: 4, padding: 4, paddingBottom: 0}}>
+							{artistData.description}
+						</Text>
+						:
+						<Text style={{textAlign: 'center', margin: 12}}>
+							No description available for this artist
+						</Text>
+				}
+			</View>
+			<View style={[styles.infoTextContainer, GlobalStyles.lightBorders]}>
+				{
+					// automatically converts raw data into a formatted list
+					[
+						['Author', artistData.authorTitle],
+						['Date of birth', artistData.dateOfBirth],
+						['Date of death', artistData.dateOfDeath],
+					].map((entry, index) => (
+						(entry[1]) ?
+							<View style={[{padding: 4}, styles.lightSeparator]} key={index}>
+								<Text style={{fontWeight: '600'}}>{entry[0]}</Text><Text>{entry[1]}</Text>
+							</View>
+							:
+							<View key={index}/>
+					))
+				}
+			</View>
+			<InfiniteScrollQuery searchTerm={artistData.authorTitle ?? ''} style={{width: '99.5%'}}/>
+			<View style={{height: 20}}/>
+		</ScrollView>
+	);
 }
 
 const getDataById = (artId: number): ArtPositionProps => {
@@ -59,7 +144,7 @@ const getDataById = (artId: number): ArtPositionProps => {
 					date: item['date_display'] ?? 'unknown year of creation',
 					artworkType: item['medium_display'], // this property refers to the medium: canvas, sculpture, etc.
 					dimensions: item['dimensions'],
-
+					artistId: item['artist_id']
 				} as ArtPositionProps
 			);
 		});
@@ -69,15 +154,12 @@ const getDataById = (artId: number): ArtPositionProps => {
 	return artData;
 };
 
-type ArtInfoProps = {
-	artId: number | null,
-};
-
 const ArtInfoScreen = () => {
 	const {artId, setArtId} = useDisplayedArtIdContext();
 	const requestUrl =  `https://api.artic.edu/api/v1/artworks/${artId}`;
 	const [isDataLoaded, setIsDataLoaded] = useState(false);
 	const [imageFullscreenMode, setImageFullscreenMode] = useState(false);
+	const [showAuthorDetails, setShowAuthorDetails] = useState(false);
 
 	const artData = getDataById(artId ?? 20684); // this placeholder should never be used, but it's essential to use a real value here
 
@@ -119,6 +201,12 @@ const ArtInfoScreen = () => {
 		return renderImageViewer();
 	}
 
+	if (showAuthorDetails && artData.artistId) {
+		return (
+			<ArtistInfoComponent authorId={artData.artistId}/>
+		);
+	}
+
 	// The reason why for most elements here i am directly styling, is that since this is a large, mostly formatted text document,
 	// it will be much easier correlate changes happening in here, and on the client side this way.
 	// There is no point in transferring small, unrepeatable styles to the spreadsheets
@@ -152,18 +240,25 @@ const ArtInfoScreen = () => {
 				}
 			</View>
 			<View style={[styles.infoTextContainer, GlobalStyles.lightBorders]}>
+				<View style={[styles.infoTextElement, styles.lightSeparator]}>
+					<View>
+						<Text style={{fontWeight: '600'}}>Author</Text><Text>{artData.author}</Text>
+					</View>
+					<Pressable onPress={() => {setShowAuthorDetails(true)}} style={{backgroundColor: Colors.minorAccent, padding: 4, paddingLeft: 6, borderRadius: 6, marginLeft: 'auto'}}>
+						<MaterialIcons name="person-search" size={32} color="black" />
+					</Pressable>
+				</View>
 				{
 					// automatically converts raw data into a formatted list
 					[
 						['Title', artData.title],
-						['Author', artData.author],
 						['Place of origin', artData.placeOfOrigin],
 						['Date of creation', artData.date],
 						['Artwork type', artData.artworkType],
 						['Dimensions', artData.dimensions],
 					].map((entry, index) => (
 						(entry[1]) ?
-							<View style={[styles.infoTextElement, styles.lightSeparator]} key={index}>
+							<View style={[{padding: 4}, styles.lightSeparator]} key={index}>
 								<Text style={{fontWeight: '600'}}>{entry[0]}</Text><Text>{entry[1]}</Text>
 							</View>
 						:
@@ -233,6 +328,8 @@ const styles = StyleSheet.create({
 	},
 	infoTextElement: {
 		padding: 4,
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
 });
 
