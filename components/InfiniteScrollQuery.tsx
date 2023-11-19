@@ -1,4 +1,4 @@
-import React, {createRef, memo, useEffect, useRef, useState} from "react";
+import React, {createRef, memo, useEffect, useState} from "react";
 import {
 	Dimensions,
 	FlatList,
@@ -13,6 +13,7 @@ import GlobalStyles from "../constants/GlobalStyles";
 import {useDisplayedArtIdContext} from "../contexts/DisplayedArtIdContext";
 import {useCurrentModeContext} from "../contexts/CurrentModeContext";
 import ViewModes from "../constants/ViewModes";
+import SaveButton from "./SaveButton";
 
 type ArtPositionProps = {id: number, title: string, imageId: string, thumbnail: { width: number | null | undefined, height: number | null | undefined }};
 
@@ -44,6 +45,7 @@ const ArtPosition = memo((data: ArtPositionProps) => {
 		<Pressable onPress={() => displayArtInfo()} style={[styles.artPosition, isImageWide ? styles.artPositionWide : {}, GlobalStyles.lightBorders]}>
 			<Image source={{uri: imageUrl}} style={[styles.artPositionImage, isImageWide ? styles.artPositionImageWide : {}, hwRatio != null ? {height: finalHeight} : {height: '100%'}]}/>
 			<Text style={styles.artPositionTitle}>{data.title}</Text>
+			<SaveButton entryId={data.id} style={{margin: 2}}/>
 		</Pressable>
 	)
 });
@@ -79,17 +81,47 @@ const getDataByPage = (page: number, searchTerm: string): ArtPositionProps[] => 
 	return pageData;
 };
 
+const fetchDataByIds = (pageIndex: number, idList: number[]) => {
+	const startingIdx = pageIndex * 10 - 10; // to slice 0-9 starting index has to be 0
+	const endingIdx = pageIndex * 10; // to slice 0-9 endingIdx has to be set to 10
+	const queryData = idList.slice(startingIdx, endingIdx).toString();
+	const queryUrl = `https://api.artic.edu/api/v1/artworks?ids=${queryData}&fields=id,title,image_id,thumbnail`;
+	return fetch(queryUrl).then(res => res.json());
+};
+
+const getDataByIdList = (page: number, dataList: number[]) => {
+	const [pageData, setPageData] = useState([]);
+
+	useEffect(() => {
+		fetchDataByIds(page, dataList).then(res => {
+			setPageData(
+				res.data.map((item: any) => ({
+						id: item['id'],
+						imageId: item['image_id'],
+						title: item['title'],
+						thumbnail: {
+							height: item['thumbnail'] ? item['thumbnail']['height'] : null,
+							width: item['thumbnail'] ? item['thumbnail']['width'] : null,
+						},
+					} as ArtPositionProps
+				))
+			);
+		});
+	}, [page, dataList]);
+
+	return pageData;
+};
+
 type PageViewProps = {
 	searchQuery: string,
 	pageNumber: number,
-	onEndReached?: () => void;
-	enablePopoutMode?: boolean
+	onEndReached?: () => any,
+	enablePopoutMode?: boolean,
+	overrideSourceIdList?: number[],
 };
-const PageView = memo(({searchQuery, pageNumber, onEndReached, enablePopoutMode = true}: PageViewProps) => {
+const PageView = memo(({searchQuery, pageNumber, onEndReached, enablePopoutMode = true, overrideSourceIdList}: PageViewProps) => {
 	if (!onEndReached)
 		onEndReached = () => null;
-
-	//console.log('Updated page to:', pageNumber);
 
 	// an entire page worth of results, we will use 2 of these to create infinite scroll
 	return (
@@ -99,7 +131,11 @@ const PageView = memo(({searchQuery, pageNumber, onEndReached, enablePopoutMode 
 			nestedScrollEnabled={false}
 			onEndReached={onEndReached}
 			onEndReachedThreshold={50}
-			data={getDataByPage(pageNumber, searchQuery)}
+			data={ overrideSourceIdList ? (
+				getDataByIdList(pageNumber, overrideSourceIdList)
+			) : (
+				getDataByPage(pageNumber, searchQuery)
+			)}
 			renderItem={({item}) => (
 				<ArtPosition id={item.id} imageId={item.imageId} title={item.title} thumbnail={item.thumbnail}/>
 			)}
@@ -113,8 +149,10 @@ type InfiniteScrollProps = {
 	style?: StyleProp<ViewStyle>,
 	overrideStyle?: StyleProp<ViewStyle>,
 	firstPageOverride?: React.JSX.Element,
+	overrideSourceIdList?: number[],
+	pageLimit?: number,
 }
-const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, overrideStyle = null, firstPageOverride}: InfiniteScrollProps) => {
+const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, overrideStyle = null, firstPageOverride, overrideSourceIdList, pageLimit}: InfiniteScrollProps) => {
 	const [pageIndex, setPageIndex] = useState(startingPage);
 	const [progressionLock, setProgressionLock] = useState(false);
 
@@ -141,7 +179,9 @@ const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, ove
 		}
 		if (closeToBottom) {
 			if (pageIndex == 1000)
-				return
+				return;
+			if (pageLimit && pageIndex == pageLimit)
+				return;
 			// this long calculation converts to: middle of page - half of the device height
 			// for better results, we need to get height of the page we are moving up, replace (contentOffset.y / 2) with that value
 			scrollViewRef.current?.scrollTo({x: 0, y: contentOffset.y / 2 - layoutMeasurement.height / 2 + triggerThreshold, animated: false})
@@ -159,8 +199,11 @@ const InfiniteScrollQuery = ({searchTerm = '', startingPage = 1, style = {}, ove
 				pageIndex == startingPage &&
 				firstPageOverride
 			}
-			<PageView pageNumber={pageIndex} searchQuery={searchTerm}/>
-			<PageView pageNumber={pageIndex + 1} searchQuery={searchTerm}/>
+			<PageView pageNumber={pageIndex} searchQuery={searchTerm} overrideSourceIdList={overrideSourceIdList}/>
+			{
+				(pageLimit && pageIndex < pageLimit) &&
+                <PageView pageNumber={pageIndex + 1} searchQuery={searchTerm} overrideSourceIdList={overrideSourceIdList}/>
+			}
 		</ScrollView>
 	);
 }

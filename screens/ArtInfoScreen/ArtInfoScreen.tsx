@@ -1,10 +1,12 @@
 import React, {useEffect, useState} from "react";
-import {Image, ScrollView, View, Text, StyleSheet, Dimensions, ActivityIndicator} from "react-native";
+import {Image, ScrollView, View, Text, StyleSheet, Dimensions, ActivityIndicator, Pressable, Modal} from "react-native";
 import {useCurrentModeContext} from "../../contexts/CurrentModeContext";
 import {useDisplayedArtIdContext} from "../../contexts/DisplayedArtIdContext";
 import ViewModes from "../../constants/ViewModes";
 import Colors from "../../constants/Colors";
 import GlobalStyles from "../../constants/GlobalStyles";
+import ImageViewer from 'react-native-image-zoom-viewer';
+import SaveButton from "../../components/SaveButton";
 
 // todo: this can be done semi-automatically, i can either bind these value names to the request's value names, or just give them the same names, then iterate over the .keys(),
 //       only nested objects like thumbnail object may be more difficult
@@ -63,23 +65,47 @@ const getDataById = (artId: number): ArtPositionProps => {
 		});
 	}, [artId]);
 
-	console.log(artData);
+	//console.log(artData);
 	return artData;
 };
 
 type ArtInfoProps = {
 	artId: number | null,
 };
+
 const ArtInfoScreen = () => {
 	const {artId, setArtId} = useDisplayedArtIdContext();
 	const requestUrl =  `https://api.artic.edu/api/v1/artworks/${artId}`;
 	const [isDataLoaded, setIsDataLoaded] = useState(false);
+	const [imageFullscreenMode, setImageFullscreenMode] = useState(false);
 
-	const artData = getDataById(artId ?? 0);
+	const artData = getDataById(artId ?? 20684); // this placeholder should never be used, but it's essential to use a real value here
 
-	const imageUrl = `https://www.artic.edu/iiif/2/${artData.imageId}/full/843,/0/default.jpg`;
+	useEffect(() => {
+		if (artData == ({} as ArtPositionProps))
+			setIsDataLoaded(false);
+		else
+			setIsDataLoaded(true);
+	}, [artData]);
+
+	const imageUrl = `https://www.artic.edu/iiif/2/${artData.imageId}/full/1686,/0/default.jpg`;
 	const hwRatio = (artData?.thumbnail?.height && artData?.thumbnail?.width) ? (artData.thumbnail.height / artData.thumbnail.width) : null;
 	const finalHeight = hwRatio ? ((Dimensions.get('window').width - 20) * hwRatio) : null;
+
+	const renderImageViewer = () => {
+		console.log('isImagerFullscreen:', imageFullscreenMode, 'imageUrl:', imageUrl);
+		return (
+			<Modal visible={true} transparent={true}>
+				<ImageViewer
+					enableSwipeDown
+					imageUrls={[{
+						url: imageUrl,
+					}]}
+					onSwipeDown={() => setImageFullscreenMode(false)}
+				/>
+			</Modal>
+		);
+	};
 
 	if (artId == null) {
 		// exit this view
@@ -89,8 +115,8 @@ const ArtInfoScreen = () => {
 		return <View/>;
 	}
 
-	if (!artData) {
-		return <ActivityIndicator size='large' color={Colors.primaryAccent} style={styles.mainImage}/>;
+	if (imageFullscreenMode) {
+		return renderImageViewer();
 	}
 
 	// The reason why for most elements here i am directly styling, is that since this is a large, mostly formatted text document,
@@ -98,10 +124,20 @@ const ArtInfoScreen = () => {
 	// There is no point in transferring small, unrepeatable styles to the spreadsheets
 	return (
 		<ScrollView style={styles.artRoot}>
-			<Image source={{uri: imageUrl}} style={[styles.mainImage, hwRatio != null ? {height: finalHeight} : {height: 400}]}/>
+			<Pressable onPress={() => setImageFullscreenMode(true)}>
+				{
+					isDataLoaded ?
+						<Image source={{uri: imageUrl}} style={[styles.mainImage, hwRatio != null ? {height: finalHeight} : {height: 400}]}/>
+					:
+						<ActivityIndicator size='large' color={Colors.primaryElement} style={styles.mainImage}/>
+				}
+			</Pressable>
 			<View style={styles.headerContainer}>
-				<Text style={styles.headerTitle}>{artData.title}</Text>
-				<Text style={styles.headerAuthor}>{artData.author}, {artData.date}</Text>
+				<View style={styles.captionContainer}>
+					<Text style={styles.headerTitle}>{artData.title}</Text>
+					<Text style={styles.headerAuthor}>{artData.author}, {artData.date}</Text>
+				</View>
+				<SaveButton entryId={artData.id} style={styles.headerSaveButton}/>
 			</View>
 			<View>
 				{
@@ -164,11 +200,17 @@ const styles = StyleSheet.create({
 	},
 	mainImage: {
 		flex: 1,
-		backgroundColor: 'tomato',
+		backgroundColor: Colors.minorAccent,
 		width: '100%',
 		height: 400,
 	},
 	headerContainer: {
+		flex: 1,
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	captionContainer: {
+		flex: 1,
 		padding: 6,
 		alignItems: 'center',
 	},
@@ -179,6 +221,10 @@ const styles = StyleSheet.create({
 	headerAuthor: {
 		fontWeight: '500',
 		fontStyle: 'italic',
+	},
+	headerSaveButton: {
+		marginLeft: 'auto',
+		marginRight: 8,
 	},
 	infoTextContainer: {
 		margin: 20,

@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "@expo/ngrok": "^2.5.0",
+    "@react-native-async-storage/async-storage": "^1.19.5",
     "expo": "~49.0.15",
     "expo-status-bar": "~1.6.0",
     "react": "18.2.0",
     "react-native": "0.72.6",
     "react-native-fast-image": "^8.6.3",
     "react-native-image-modal": "^1.0.16",
+    "react-native-image-zoom-viewer": "^3.0.1",
     "react-native-reanimated": "~3.3.0"
   },
   "devDependencies": {

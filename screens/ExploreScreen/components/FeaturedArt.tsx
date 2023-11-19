@@ -1,7 +1,11 @@
 import React, {memo, useEffect, useState} from "react";
-import {StyleSheet, View, Text, ActivityIndicator, Dimensions, Image} from "react-native";
+import {StyleSheet, View, Text, ActivityIndicator, Dimensions, Image, Pressable} from "react-native";
 import GlobalStyles from "../../../constants/GlobalStyles";
 import Colors from "../../../constants/Colors";
+import {useDisplayedArtIdContext} from "../../../contexts/DisplayedArtIdContext";
+import {useCurrentModeContext} from "../../../contexts/CurrentModeContext";
+import ViewModes from "../../../constants/ViewModes";
+import SaveButton from "../../../components/SaveButton";
 
 // TODO: this one is critical, fast image in none of it's variants works on expo, at least not for me, not even the dedicated expo packages,
 //       we need to resolve this ASAP, otherwise the loading times will be unbearable
@@ -11,6 +15,14 @@ import Colors from "../../../constants/Colors";
 const CachedImage = memo(Image);
 
 const FeaturedArt = memo(() => {
+	const { artId, setArtId } = useDisplayedArtIdContext();
+	const { currentMode, setCurrentMode } = useCurrentModeContext();
+
+	const openArtDetails = (newArtId: number) => {
+		setArtId(newArtId);
+		setCurrentMode(ViewModes.details);
+	};
+
 	const requiredFields = [
 		'id',
 		'title',
@@ -34,28 +46,31 @@ const FeaturedArt = memo(() => {
 		return text.replace(regex, "");
 	}
 
-	type featuredObject = {
-		title: string | undefined,
-		description: string | undefined,
-		imageFileUrl: string | undefined,
-		height: number | null | undefined,
+	type FeaturedPositionProps = {
+		id: number
+		title?: string,
+		description?: string,
+		imageFileUrl?: string,
+		height?: number | null,
 	};
-	const [featuredDetails, setFeaturedDetails] = useState<featuredObject>({} as featuredObject);
+	const [featuredDetails, setFeaturedDetails] = useState<FeaturedPositionProps>({} as FeaturedPositionProps);
 	const [isArtLoaded, setIsArtLoaded] = useState(false);
 
 	// by running the fetch inside this useEffect, i ensure that the fetch only runs once
 	useEffect(() => {
 		fetch(candidateSearchQuery).then(res => res.json()).then((res) => {
 			console.log('fetching');
-			const imageId = res.data[0]['image_id'];
-			const thumbnailObject = res.data[0]['thumbnail'];
+			const resObj = res.data[0];
+			const imageId = resObj['image_id'];
+			const thumbnailObject = resObj['thumbnail'];
 			const altText = thumbnailObject['alt_text'];
 			// object may not have a description, in that case, use alt_text
 			const hwRatio = thumbnailObject['height'] != null ? thumbnailObject['height'] / thumbnailObject['width'] : null;
 			// todo: in case of null hwRatio, we have to extract it from the 'dimensions' string
 			setFeaturedDetails({
-				title: res.data[0]['title'],
-				description: removeTagsFromString(res.data[0]['description'] || altText),
+				id: resObj['id'],
+				title: resObj['title'],
+				description: removeTagsFromString(resObj['description'] || altText),
 				imageFileUrl: `https://www.artic.edu/iiif/2/${imageId}/full/843,/0/default.jpg`,
 				height: hwRatio != null ? Dimensions.get('window').width * hwRatio : null,
 			});
@@ -69,20 +84,23 @@ const FeaturedArt = memo(() => {
 	}
 
 	return (
-		<View style={styles.featuredRoot}>
+		<Pressable onPress={() => openArtDetails(featuredDetails.id)} style={styles.featuredRoot}>
 			<Text style={[styles.featuredHeader, GlobalStyles.headerFont]}>Art of the day</Text>
 			<View style={GlobalStyles.popoutBorders}>
 				<CachedImage source={{uri: featuredDetails.imageFileUrl}} style={[styles.featuredImage, {height: featuredDetails.height}]}/>
 				<View style={styles.featuredTextWrapper}>
-					<Text style={styles.featuredTitle}>
-						{featuredDetails.title}
-					</Text>
+					<View style={{flexDirection: 'row'}}>
+						<Text style={styles.featuredTitle}>
+							{featuredDetails.title}
+						</Text>
+						<SaveButton entryId={featuredDetails.id} style={{alignSelf: 'center', marginLeft: 'auto', marginRight: 6}}/>
+					</View>
 					<Text style={styles.featuredDescription}>
 						{featuredDetails.description}
 					</Text>
 				</View>
 			</View>
-		</View>
+		</Pressable>
 	);
 });
 

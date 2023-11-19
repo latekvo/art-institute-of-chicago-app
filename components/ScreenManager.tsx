@@ -7,6 +7,8 @@ import CategoriesScreen from "../screens/CategoriesScreen/CategoriesScreen";
 import SearchScreen from "../screens/SearchScreen/SearchScreen";
 import ArtInfoScreen from "../screens/ArtInfoScreen/ArtInfoScreen";
 
+// todo: replace this entire component with React Navigator
+
 const ScreenManager = () => {
 	const { currentMode, setCurrentMode } = useCurrentModeContext();
 
